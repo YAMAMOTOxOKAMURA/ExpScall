@@ -14,6 +14,7 @@
 %
 function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
 
+disp('test');
     if isfield(SIMparam,'Method') == 0, 
        error('Specify SIMparam.Method');
     end;
