@@ -10,11 +10,11 @@
 %  Modified: 29 Sep 2014 (IT)  % StatJudge. ...
 %  Modified: 1 Nov 2014 (KY) % SIMparam.SwStatJudge = 6,vowel = /a/
 %  Modified: 2 Nov 2014 (KY) % SIMparam.SwStatJudge = 6,vowel = /a-o/
+%  Modified: 25 Nov 2014 (KY) % SIMparam.SwStatJudge = 7,cross-corration
 %
 %
 function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
 
-disp('test');
     if isfield(SIMparam,'Method') == 0, 
        error('Specify SIMparam.Method');
     end;
@@ -241,7 +241,26 @@ disp('test');
        
        %find(strcmp(vowellabel_Intvl(:,:,2),ListVowel(1)) == 1)
        %pause;
-      
+       
+      for nIntvl = 1:NumIntvl,
+          for nRpt = 1:SIMparam.NumRptWord, 
+              for nVowel = 1:5,
+                  NumMoraListVwl = find(strcmp(vowellabel(:,nRpt,nIntvl),ListVowel(nVowel)) == 1 ...
+                      | strcmp(vowellabel(:,nRpt,nIntvl),ListLgVowel(nVowel)) == 1)
+              
+                  %vowelStrtTsec(NumMoraListVwl,nRpt,nIntvl)
+                  %vowelEdTsec(NumMoraListVwl,nRpt,nIntvl)
+                  if vowelStrtTsec(NumMoraListVwl,nRpt,nIntvl) < vowelCTsec(NumMoraListVwl,nRpt,nIntvl)-Caltsec
+                      disp('aaa')
+                  end;
+                  pause;
+             
+             end;
+          end;
+      end;
+       
+       
+       if 0 
        for nIntvl = 1:NumIntvl,  
          for nVowel = 1:5,
              NumMoraListVwl = find(strcmp(vowellabel(:,:,nIntvl),ListVowel(nVowel)) == 1 ...
@@ -272,7 +291,7 @@ disp('test');
              else
                  endf = round((vowelCTsec(MtchVwl) + Caltsec)/SGparam.Tshift);
              end;
-           
+             
            end; % length(NumMoraAllListVwl) <= 1,
            
            ExctPtrn = zeros(NumCh,length(bigf));
@@ -309,6 +328,9 @@ disp('test');
          %disp(' ');
          %pause;
        end;
+       
+       end; %if 0
+       
    end; %SeStatJudge = 6;
    
     %% Judgement based on Stat
@@ -364,7 +386,7 @@ disp('test');
         ValJudge(2) = StatJudge.ChCoG4VwlDur(2);
     elseif SIMparam.SwStatJudge == 7, %cross-corration
         
-        StatJudge.ExctAllCrossCorPtrn
+        StatJudge.ExctMeanCrossCorPtrn
         Intvl1ClsCor = StatJudge.ExctMeanCrossCorPtrn(4,:,1);
         Intvl2ClsCor = StatJudge.ExctMeanCrossCorPtrn(4,:,2);
         
