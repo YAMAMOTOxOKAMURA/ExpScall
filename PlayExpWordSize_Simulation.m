@@ -16,7 +16,7 @@
 function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
 
     if isfield(SIMparam,'Method') == 0, 
-       error('Specify SIMparam.Method');
+      error('Specify SIMparam.Method');
     end;
     if isfield(SIMparam,'fs') == 0, 
        error('Specify SIMparam.fs');
@@ -77,7 +77,7 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
         [GCSpecGramPwr, SGparam] = CalSmoothSpec(cGCout.^2,SGparam);
         %[GCSpecGramPwr, SGparam] = CalSmoothSpec(pGCout.^2,SGparam);
         [NumCh NumFrame] = size(GCSpecGramPwr);
-        GCSpecGram(1:NumCh,1:NumFrame,nIntvl) = sqrt(GCSpecGramPwr); %  rms spectrogram
+        GCSpecGram(1:NumCh,1:NumFrame,nIntvl) = sqrt(GCSpecGramPwr.^0.3); %  rms spectrogram
             
       end;
       str = ['save ' NameSpec ' GCSpecGram SGparam'];
@@ -233,7 +233,7 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
    StatJudge.ExctMeanCrossCorPtrn = zeros(5,100,2);
    Caltsec = 0.025; % ’†‰›‚©‚ç50ms
    
-   if SIMparam.SwStatJudge == 6 | SIMparam.SwStatJudge == 7,
+   if SIMparam.SwStatJudge == 6 | SIMparam.SwStatJudge == 7 | SIMparam.SwStatJudge == 8,
        % add 1 Nov 2014 (KY)
        
        ListVowel = {'a','i','u','e','o'};
@@ -241,63 +241,8 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
        
        %find(strcmp(vowellabel_Intvl(:,:,2),ListVowel(1)) == 1)
        %pause;
-      
-       %% 
-      if 0 
-      for nIntvl = 1:NumIntvl,
-          for nRpt = 1:SIMparam.NumRptWord, 
-              for nVowel = 1:5,
-                  NumMoraListVwl = find(strcmp(vowellabel(:,nRpt,nIntvl),ListVowel(nVowel)) == 1 ...
-                      | strcmp(vowellabel(:,nRpt,nIntvl),ListLgVowel(nVowel)) == 1);
-              
-                  if length(NumMoraListVwl) < 1
-                      ExctPtrn(nVowel,nRpt,nIntvl).Vwl = zeros(100,1);
-                      ExctPtrn(nVowel,nRpt,nIntvl).MeanVwl = NaN;
-                      %ExctPtrn(nVowel,nRpt,nIntvl).Vwl = NaN;
-                  else    
-                      ExctvwlPtrn = zeros(100,length(NumMoraListVwl));
-                      for nRtvwl = 1:length(NumMoraListVwl),
-                         
-                          if vowelStrtTsec(NumMoraListVwl(nRtvwl),nRpt,nIntvl) ...
-                                  < vowelCTsec(NumMoraListVwl(nRtvwl),nRpt,nIntvl) - Caltsec
-                              bigf = round(vowelStrtTsec(NumMoraListVwl(nRtvwl),nRpt,nIntvl)/SGparam.Tshift);
-                          else
-                              bigf = round((vowelCTsec(NumMoraListVwl(nRtvwl),nRpt,nIntvl) - Caltsec)/SGparam.Tshift);
-                          end;
-                          
-                          if vowelEdTsec(NumMoraListVwl(nRtvwl),nRpt,nIntvl)...
-                                  < (vowelCTsec(NumMoraListVwl(nRtvwl),nRpt,nIntvl) + Caltsec),
-                              endf = round(vowelEdTsec(NumMoraListVwl(nRtvwl),nRpt,nIntvl)/SGparam.Tshift);
-                          else
-                              endf = round((vowelCTsec(NumMoraListVwl(nRtvwl),nRpt,nIntvl) + Caltsec)/SGparam.Tshift);
-                          end;
-                          
-                          ExctVwlsection = bigf:endf;
-                          ExctvwlPtrn(:,nRtvwl) = rms(GCSpecGram(:,ExctVwlsection,nIntvl),2);
-                      end;
-                  
-                      ExctPtrn(nVowel,nRpt,nIntvl).Vwl = ExctvwlPtrn;
-                      if length(NumMoraListVwl) == 1,ExctPtrn(nVowel,nRpt,nIntvl).MeanVwl = ExctvwlPtrn';
-                      elseif length(NumMoraListVwl) > 1, ExctPtrn(nVowel,nRpt,nIntvl).MeanVwl = mean(ExctvwlPtrn');
-                      end;
-                      
-                  end;
-                  
-                  %pause;
-             
-             end; %nVowel
-          end; % nRpt
-      end; %nIntvl
-      
-      disp('Intvl1 : a  ')
-      ExctPtrn(1,:,1).MeanVwl
-      disp(': Vowel')
-      pause;
-       
-      end;
-      
-      %%
-      
+     
+      %% 
        for nIntvl = 1:NumIntvl,  
          for nVowel = 1:5,
              NumMoraListVwl = find(strcmp(vowellabel(:,:,nIntvl),ListVowel(nVowel)) == 1 ...
@@ -306,8 +251,8 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
                  | strcmp(vowellabel,ListLgVowel(nVowel)) == 1);
            
            if length(NumMoraAllListVwl) <= 1 | length(NumMoraListVwl) < 1,
-             
              StatJudge.ChCoG_Vwl(:,nVowel) = NaN;
+             ExctCrsCr(nIntvl,nVowel).Adtrynrv = NaN;
              continue;
            else
              MtchVwl = NumMoraListVwl;
@@ -329,8 +274,10 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
            ExctPtrn = zeros(NumCh,length(bigf));
            
            for nRpt6 = 1:length(bigf)
-               ExctVwlsection = bigf(nRpt6):endf(nRpt6);
-               ExctPtrn(:,nRpt6)= rms(GCSpecGram(:,ExctVwlsection,nIntvl),2);
+             str = ['***** ListVowel-' char(ListVowel(nVowel)) ': Vowel analysis *****'];
+             disp(str);
+             ExctVwlsection = bigf(nRpt6):endf(nRpt6);
+             ExctPtrn(:,nRpt6)= rms(GCSpecGram(:,ExctVwlsection,nIntvl),2);
            end;
            
            if length(bigf) > 1, ExctPtrnvwl = mean(ExctPtrn');
@@ -340,8 +287,10 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
                ExctPtrnvwl = zeros(1,100);
            end;
            
+           ExctCrsCr(nIntvl,nVowel).Adtrynrv = ExctPtrn;
            StatJudge.ExctMeanPtrn(nVowel,:,nIntvl) = ExctPtrnvwl;
            
+           %% Center of gravity 
            CumExtPtrnvwl = cumsum(ExctPtrnvwl);
            ChIntrp = 0.01;
            NchRes = 1:ChIntrp:NumCh;
@@ -349,6 +298,8 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
            [dummy Ncog3] = min(abs(IntrpCumExctPtrnvwl-CumExtPtrnvwl(end)/2));
            StatJudge.ChCoG_Vwl(nIntvl,nVowel) = NchRes(Ncog3);
          end;
+         
+         ExctCrsCr(nIntvl,:).Adtrynrv
          
          disp(sprintf('StatJudge.ChCoG_Vwl = %6.2f  ',StatJudge.ChCoG_Vwl(nIntvl,:)));
          disp(' ')
@@ -410,23 +361,24 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
         ValJudge(1) = StatJudge.ChCoG4VwlDur(1);
         ValJudge(2) = StatJudge.ChCoG4VwlDur(2);
     elseif SIMparam.SwStatJudge == 7, %cross-corration
-        
-        StatJudge.ExctMeanPtrn
+       
+        StatJudge.ExctMeanPtrn;
         Intvl1ClsCor = StatJudge.ExctMeanPtrn(4,:,1);
         Intvl2ClsCor = StatJudge.ExctMeanPtrn(4,:,2);
-        
-        [CC,lags] = xcorr(Intvl1ClsCor,Intvl2ClsCor,100,'coeff');
+
+        [CrsCr,lags] = xcorr(Intvl1ClsCor,Intvl2ClsCor,NumCh,'coeff');
         %stem(lags(101:end),xc(101:end),'markerfacecolor',[0 0 1])
-        lags(find(CC == max(abs(CC))))
+        lags(find(CrsCr == max(abs(CrsCr))))
         
-        if lags(find(CC == max(CC)))>0,
+        if lags(find(CrsCr == max(CrsCr)))>0,
             ValJudge(1) = 1;
             ValJudge(2) = 0;
         else
             ValJudge(1) = 0;
             ValJudge(2) = 1;
         end;
-    
+    elseif SIMparam.SwStatJudge == 8, %cross-corration
+        
     else
         error('Not Prepared yet');
     end;
