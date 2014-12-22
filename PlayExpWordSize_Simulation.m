@@ -11,6 +11,8 @@
 %  Modified: 1 Nov 2014 (KY) % SIMparam.SwStatJudge = 6,vowel = /a/
 %  Modified: 2 Nov 2014 (KY) % SIMparam.SwStatJudge = 6,vowel = /a-o/
 %  Modified: 25 Nov 2014 (KY) % SIMparam.SwStatJudge = 7,cross-corration
+%  Modified: 5 Dec 2014 (KY) % SIMparam.SwStatJudge = 8,cross-corration_v2
+%  Modified: 5 Dec 2014 (KY) % SIMparam.SwStatJudge = 9,cross-corration_v3
 %
 %
 function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
@@ -186,6 +188,7 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
         IntrpCumExctPtrnAll = interp1(1:NumCh,CumExtPtrnAll,NchRes);
         [dummy Ncog1] = min(abs(IntrpCumExctPtrnAll-CumExtPtrnAll(end)/2));
         StatJudge.ChCoG4AllDur(nIntvl) = NchRes(Ncog1);
+        StatJudge.ExctPtrn(nIntvl,:) = ExctPtrnAll;
         
         %%
         
@@ -252,7 +255,7 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
            
            if length(NumMoraAllListVwl) <= 1 | length(NumMoraListVwl) < 1,
              StatJudge.ChCoG_Vwl(:,nVowel) = NaN;
-             ExctCrsCr(nIntvl,nVowel).Adtrynrv = NaN;
+             %ExctCrsCr(nIntvl,nVowel).Ptrn = NaN;
              continue;
            else
              MtchVwl = NumMoraListVwl;
@@ -287,7 +290,7 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
                ExctPtrnvwl = zeros(1,100);
            end;
            
-           ExctCrsCr(nIntvl,nVowel).Adtrynrv = ExctPtrn;
+           ExctCrsCr(nIntvl,nVowel).Ptrn = ExctPtrn;
            StatJudge.ExctMeanPtrn(nVowel,:,nIntvl) = ExctPtrnvwl;
            
            %% Center of gravity 
@@ -297,14 +300,15 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
            IntrpCumExctPtrnvwl = interp1(1:NumCh,CumExtPtrnvwl,NchRes);
            [dummy Ncog3] = min(abs(IntrpCumExctPtrnvwl-CumExtPtrnvwl(end)/2));
            StatJudge.ChCoG_Vwl(nIntvl,nVowel) = NchRes(Ncog3);
+           
          end;
          
-         ExctCrsCr(nIntvl,:).Adtrynrv
+         %ExctCrsCr(nIntvl,:).test;
          
-         disp(sprintf('StatJudge.ChCoG_Vwl = %6.2f  ',StatJudge.ChCoG_Vwl(nIntvl,:)));
-         disp(' ')
+         %disp(sprintf('StatJudge.ChCoG_Vwl = %6.2f  ',StatJudge.ChCoG_Vwl(nIntvl,:)));
+         %disp(' ')
+         %pause;
          
-         pause;
        end;
      
    end; %SeStatJudge = 6;
@@ -377,15 +381,86 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
             ValJudge(1) = 0;
             ValJudge(2) = 1;
         end;
-    elseif SIMparam.SwStatJudge == 8, %cross-corration
         
+    elseif SIMparam.SwStatJudge == 8, %cross-corration  05 Dec 2014 KY -> 19 Dec 2014 KY
+     
+      %組み合わせがない場合の処理ができない！！！
+      
+      c = [];
+      nErrorflag = 0;
+      %StatJudge(1).ExPtnSum = 0;
+      %StatJudge(2).ExPtnSum = 0;
+      
+      for nVowel = 1:5,
+        try
+          [dummy,nv1] = size(ExctCrsCr(1,nVowel).Ptrn);
+          [dummy,nv2] = size(ExctCrsCr(2,nVowel).Ptrn);
+        catch me
+          warning('Vowel is not full.');
+          break;
+        end;
+        
+          for nRpt_nVwl1 = 1:nv1,
+            Intvl1ClsCor = ExctCrsCr(1,nVowel).Ptrn(:,nRpt_nVwl1);
+            %IntrpIntvl1ClsCor = interp1(1:NumCh,Intvl1ClsCor,NchRes); 
+            for nRpt_nVwl2 = 1:nv2,
+              Intvl2ClsCor = ExctCrsCr(2,nVowel).Ptrn(:,nRpt_nVwl2);
+              %IntrpIntvl2ClsCor = interp1(1:NumCh,Intvl2ClsCor,NchRes);
+              [CrsCr,lags] = xcorr(Intvl1ClsCor,Intvl2ClsCor,NumCh,'coeff');
+              nErrorflag = 1;
+              %[CrsCr,lags] = xcorr(IntrpIntvl1ClsCor,IntrpIntvl2ClsCor,NumCh*100,'coeff');
+              
+              %相関係数の羅列
+              c = horzcat(c,CrsCr); 
+              %% %%%%%%%%%%%%%%%%%%
+              % シフト量で多数決   %%
+              %%%%%%%%%%%%%%%%%%%%%
+              
+              if 0
+                if lags(find(CrsCr == max(CrsCr)))>0,
+                StatJudge(1).ExPtnSum = StatJudge(1).ExPtnSum + 1;
+              elseif lags(find(CrsCr == max(CrsCr)))<0
+                StatJudge(2).ExPtnSum = StatJudge(2).ExPtnSum + 1;
+              end;
+              end;
+              
+            end;
+          end;
+        end;
+        
+        if nErrorflag,
+          c_sum = sum(c,2);
+          [max_xc,Shft] = max(c_sum);
+          %pause;
+          StatJudgexcorr = lags(find(c_sum == max_xc));
+          disp(sprintf('StatJudge_xcorr = %6.2f  ',StatJudgexcorr));
+          
+          if StatJudgexcorr > 0,ValJudge(1) = 1; ValJudge(2) = 0;
+          elseif StatJudgexcorr < 0, ValJudge(1) = 0; ValJudge(2) = 1;
+          else % shift = 0 ,randam choise
+            j = rand - 0.5
+            %pause;
+            disp('randam choise');
+            if j > 0, ValJudge(1) = 1;ValJudge(2) = 0;
+            else ValJudge(1) = 0; ValJudge(2) = 1;
+            end;
+          end;
+        else
+          j = rand - 0.5
+          pause;
+          disp('randam choise');
+          if j > 0, ValJudge(1) = 1;ValJudge(2) = 0;
+          else ValJudge(1) = 0; ValJudge(2) = 1;
+          end;
+        end;  
+            
     else
         error('Not Prepared yet');
     end;
     RspBtn = 2 - (ValJudge(1) > ValJudge(2));   % Logic [1, 0] --> RspBtn [1, 2];
     
     disp(sprintf('ValJudge               = %6.2f   %6.2f',ValJudge(:)));
-    StatJudge.ValJudge = ValJudge;
+    %StatJudge.ValJudge = ValJudge;
     
     disp(['Respone Button = ' int2str(RspBtn) ]);
     disp(['--------------------------']);
@@ -403,6 +478,7 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
     %pause;
     
 return;
+
 
 
 %
