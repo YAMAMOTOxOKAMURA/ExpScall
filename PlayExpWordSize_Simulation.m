@@ -438,7 +438,7 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
           if StatJudgexcorr > 0,ValJudge(1) = 1; ValJudge(2) = 0;
           elseif StatJudgexcorr < 0, ValJudge(1) = 0; ValJudge(2) = 1;
           else % shift = 0 ,randam choise
-            j = rand - 0.5
+            j = randn;
             %pause;
             disp('randam choise');
             if j > 0, ValJudge(1) = 1;ValJudge(2) = 0;
@@ -446,7 +446,7 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
             end;
           end;
         else
-          j = rand - 0.5
+          j = randn;
           pause;
           disp('randam choise');
           if j > 0, ValJudge(1) = 1;ValJudge(2) = 0;
