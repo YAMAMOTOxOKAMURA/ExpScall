@@ -15,6 +15,7 @@
 %  Modified: 5 Dec 2014 (KY) % SIMparam.SwStatJudge = 9,cross-corration_v3
 %  Modified: 25 Dec 2014 (KY) % SIMparam.SwStatJudge = 8,Cross-Corration add diff
 %  Modified: 9 Jan 2015 (KY) % rng set.
+%  Modified: 14 Jan 2015 (KY)% add CrsCrJudge = 6　
 %
 %
 %
@@ -251,6 +252,7 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
       %% 
        for nIntvl = 1:NumIntvl,  
          for nVowel = 1:5,
+           %% 母音区間の推定
              NumMoraListVwl = find(strcmp(vowellabel(:,:,nIntvl),ListVowel(nVowel)) == 1 ...
                  | strcmp(vowellabel(:,:,nIntvl),ListLgVowel(nVowel)) == 1);
              NumMoraAllListVwl = find(strcmp(vowellabel,ListVowel(nVowel)) == 1 ...
@@ -296,7 +298,11 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
            ExctCrsCr(nIntvl,nVowel).Ptrn = ExctPtrn;
            StatJudge.ExctMeanPtrn(nVowel,:,nIntvl) = ExctPtrnvwl;
            
-           %% Center of gravity 
+           
+           %% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           %      Center of gravity       %
+           %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+           
            CumExtPtrnvwl = cumsum(ExctPtrnvwl);
            ChIntrp = 0.01;
            NchRes = 1:ChIntrp:NumCh;
@@ -389,16 +395,19 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
      
       %組み合わせがない場合の処理ができない！！！
       
-      c = [];
+      psi = [];
       nErrorflag = 0;
+      ExtPtnPlot = 0;
       
       %% 
-      CrsCrJudge = 3;
-      % CrsCrJudge = 1 -> 多数決(b)
-      % CrsCrJudge = 2 -> 相関の足し合わせ(c)
-      % CrsCrJudge = 3 -> diff(d)
-      % CrsCrJudge = 4 -> diffdiff(e)
+      CrsCrJudge = 5;
+      % CrsCrJudge = 1 -> 多数決
+      % CrsCrJudge = 2 -> 相関の足し合わせ
+      % CrsCrJudge = 3 -> diff
+      % CrsCrJudge = 4 -> diffdiff
       % CrsCrJudge = 5 -> 重みづけ
+      % CrsCrJudge = 6 -> 特徴量補間　 
+      
       for nVowel = 1:5,
         try
           [dummy,nv1] = size(ExctCrsCr(1,nVowel).Ptrn);
@@ -410,18 +419,29 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
         
           for nRpt_nVwl1 = 1:nv1,
             Intvl1ClsCor = ExctCrsCr(1,nVowel).Ptrn(:,nRpt_nVwl1);
-            DfIntvl1ClsCor = diff(Intvl1ClsCor);
+            DfIntvl1ClsCor = [diff(Intvl1ClsCor); 0;];
             DfDfIntvl1ClsCor = diff(diff(Intvl1ClsCor));
-            %IntrpIntvl1ClsCor = interp1(1:NumCh,Intvl1ClsCor,NchRes); 
+            
+            Intrp_Intvl1ClsCor = interp1(1:NumCh,Intvl1ClsCor,NchRes);
+            Intrp_DfIntvl1ClsCor = interp1(1:NumCh,DfIntvl1ClsCor,NchRes); 
             
             for nRpt_nVwl2 = 1:nv2,
               Intvl2ClsCor = ExctCrsCr(2,nVowel).Ptrn(:,nRpt_nVwl2);
-              DfIntvl2ClsCor = diff(Intvl2ClsCor);
+              DfIntvl2ClsCor = [diff(Intvl2ClsCor); 0;];
               DfDfIntvl2ClsCor = diff(diff(Intvl2ClsCor));
-              %IntrpIntvl2ClsCor = interp1(1:NumCh,Intvl2ClsCor,NchRes);
+              
+              Intrp_Intvl2ClsCor = interp1(1:NumCh,Intvl2ClsCor,NchRes);
+              Intrp_DfIntvl2ClsCor = interp1(1:NumCh,DfIntvl2ClsCor,NchRes);
                             
               nErrorflag = 1;
               
+              % mod 15 Jan 2015 KY
+              if ExtPtnPlot == 1,
+                ExtPtn = [Intvl1ClsCor Intvl2ClsCor];
+                subplot(nv2,nv1,nRpt_nVwl2+1);
+                plot(ExtPtn);
+              end;
+              %pause;
               %% %%%%%%%%%%%%%%%%%%
               %    CrsCrJudge    %%
               %%%%%%%%%%%%%%%%%%%%%
@@ -439,36 +459,43 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
               elseif CrsCrJudge == 4,
                 [CrsCr,lags] = xcorr(DfDfIntvl1ClsCor,DfDfIntvl2ClsCor,length(DfDfIntvl2ClsCor),'coeff');
               elseif CrsCrJudge == 5,
-                wght = SIMparam.wght;
+
                 [CrsCr1,lags] = xcorr(Intvl1ClsCor,Intvl2ClsCor,NumCh,'coeff');
-                [CrsCr2,lags] = xcorr(DfIntvl1ClsCor,DfIntvl2ClsCor,length(DfIntvl2ClsCor)+1,'coeff');
-                CrsCr = wght.*CrsCr1 + (1-wght).*CrsCr2;
-                %pause;
+                [CrsCr2,lags] = xcorr(DfIntvl1ClsCor,DfIntvl2ClsCor,length(DfIntvl2ClsCor),'coeff');
+                CrsCr = SIMparam.wght.*CrsCr1 + (1-SIMparam.wght).*CrsCr2;
+               
+              elseif CrsCrJudge == 6,
+     
+                [CrsCr1,lags] = xcorr(Intrp_Intvl1ClsCor',Intrp_Intvl2ClsCor',length(Intrp_Intvl1ClsCor),'coeff');
+                [CrsCr2,lags] = xcorr(Intrp_DfIntvl1ClsCor',Intrp_DfIntvl2ClsCor',length(Intrp_DfIntvl1ClsCor),'coeff');
+                CrsCr = SIMparam.wght.*CrsCr1 + (1-SIMparam.wght).*CrsCr2;
+                
               else
                 error('Not prepare');
-              %[CrsCr,lags] = xcorr(IntrpIntvl1ClsCor,IntrpIntvl2ClsCor,NumCh*100,'coeff');
               end;
               
-               %相関係数の羅列
-              c = horzcat(c,CrsCr); 
+              %相関係数の羅列
+              psi = horzcat(psi,CrsCr);
+              %pause;
               
             end;
           end;
         end;
         
         if nErrorflag,
-          c_sum = sum(c,2);
-          [max_xc,Shft] = max(c_sum);
-          %pause;
-          StatJudgexcorr = lags(find(c_sum == max_xc));
-          disp(sprintf('StatJudge_xcorr = %6.2f  ',StatJudgexcorr));
+          psi_sum = sum(psi,2);
+          [max_xc,Shft] = max(psi_sum);
+          StatJudge.xcorr = lags(find(psi_sum == max_xc));
+          disp(sprintf('StatJudge_xcorr = %6.2f  ',StatJudge.xcorr));
           
-          if StatJudgexcorr > 0,ValJudge(1) = 1; ValJudge(2) = 0;
-          elseif StatJudgexcorr < 0, ValJudge(1) = 0; ValJudge(2) = 1;
+          if StatJudge.xcorr > 0,ValJudge(1) = 1; ValJudge(2) = 0;
+          elseif StatJudge.xcorr < 0, ValJudge(1) = 0; ValJudge(2) = 1;
           else % shift = 0 ,randam choise
             j = randn;
-            %pause;
             disp('randam choise');
+            %error('------------ OK ??');
+            %pause;
+            
             if j > 0, ValJudge(1) = 1;ValJudge(2) = 0;
             else ValJudge(1) = 0; ValJudge(2) = 1;
             end;
@@ -485,6 +512,7 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
     else
         error('Not Prepared yet');
     end;
+    
     RspBtn = 2 - (ValJudge(1) > ValJudge(2));   % Logic [1, 0] --> RspBtn [1, 2];
     
     disp(sprintf('ValJudge               = %6.2f   %6.2f',ValJudge(:)));
