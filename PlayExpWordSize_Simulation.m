@@ -295,7 +295,10 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
                ExctPtrnvwl = zeros(1,100);
            end;
            
-           ExctCrsCr(nIntvl,nVowel).Ptrn = ExctPtrn;
+           ExctCrsCr(nIntvl,nVowel).Ptrn = ExctPtrn
+           pause
+           ExctCrsCr(nIntvl,nVowel) = ExctPtrn;
+           pause
            StatJudge.ExctMeanPtrn(nVowel,:,nIntvl) = ExctPtrnvwl;
            
            
@@ -410,6 +413,8 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
       
       for nVowel = 1:5,
         try
+          %[dummy,nv1] = size(ExctCrsCr(1,nVowel));
+          %[dummy,nv2] = size(ExctCrsCr(2,nVowel));
           [dummy,nv1] = size(ExctCrsCr(1,nVowel).Ptrn);
           [dummy,nv2] = size(ExctCrsCr(2,nVowel).Ptrn);
         catch me
@@ -534,8 +539,6 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
     %pause;
     
 return;
-
-
 
 %
 %
