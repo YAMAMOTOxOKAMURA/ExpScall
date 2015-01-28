@@ -449,12 +449,16 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
           [dummy,nv1] = size(ExctCrsCr(1,nVowel).Ptrn);
           [dummy,nv2] = size(ExctCrsCr(2,nVowel).Ptrn);
           
-        catch me
-          % どちらか一方に　/o/　まで特徴量がない場合
-          warning('Vowel is not full.');
-          break;
-        end;
-        
+          if ExtPtnPlot == 1; % plot switch
+            plot(1:NumCh,ExctCrsCr(1,nVowel).Ptrn,'r',1:NumCh,ExctCrsCr(2,nVowel).Ptrn,'b')
+            hold off
+            %plot(Intvl2ClsCor,'b')
+            xlabel('channel');
+            ylabel('power')
+            refresh 
+            pause
+          end
+          
           for nRpt_nVwl1 = 1:nv1,
             Intvl1ClsCor = ExctCrsCr(1,nVowel).Ptrn(:,nRpt_nVwl1);
             DfIntvl1ClsCor = [diff(Intvl1ClsCor); 0;];
@@ -473,7 +477,6 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
                             
               nErrorflag = 1;
               
-              %pause;
               %% %%%%%%%%%%%%%%%%%%
               %    CrsCrJudge    %%
               %%%%%%%%%%%%%%%%%%%%%
@@ -508,20 +511,27 @@ function [RsltSim] = PlayExpWordSize_Simulation(SndSim,SIMparam);
               
               %相関係数の羅列
               psi = horzcat(psi,CrsCr);
-              %pause;
+              
+              if ExtPtnPlot == 1
+              plot(lags,CrsCr);
+              ylabel('correlation coefficient')
+              pause;
+              end
               
             end;
           end;
+          
+        catch me
+          % どちらか一方に　/o/　まで特徴量がない場合
+          stv = char(ListVowel(nVowel));   
+          warning('Cant Combine.');
+          continue;
+        end;
+       
         end;
         
         if nErrorflag,
           psi_sum = sum(psi,2);
-           
-         % plot　%mod 15 Jan 2015 KY
-         if ExtPtnPlot == 1,
-           plot(psi_sum);
-           %pause
-         end;
           
           [max_xc,Shft] = max(psi_sum);
           StatJudge.xcorr = lags(find(psi_sum == max_xc));
